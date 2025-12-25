@@ -13,6 +13,7 @@ const FormSchema = z.object({
 });
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
+const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
 const sql = postgres(process.env.POSTGRES_URL_NON_POOLING!, { ssl: 'require' });
 
@@ -33,6 +34,24 @@ export async function createInvoice(formData: FormData) {
 
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
+}
 
-  console.log(amountInCents);
+export async function updateInvoice(id: string, formData: FormData) {
+  const { customerId, amount, status } = UpdateInvoice.parse({
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
+  });
+  const amountInCents = amount * 100;
+
+  await sql`
+    update invoices
+    set customer_id = ${customerId},
+        amount = ${amountInCents},
+        status = ${status}
+    where id = ${id}
+  `;
+
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
 }
